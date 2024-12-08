@@ -1,0 +1,5 @@
+# CMake编译优化，使用Ninja生成器
+
+如果系统上有make工具并且没有显示指定生成器，CMake默认会生成适用于make的MakeFile文件。
+
+然而CMake也可以搭配其他的生成器，比如Ninja生成器，使用简单，并且Ninja的编译速度通常要比Makefile要快

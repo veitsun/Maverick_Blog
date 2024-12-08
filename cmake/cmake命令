@@ -1,0 +1,15 @@
+### file(GLOB HEllOLIB_SRC_cpp ${PROJECT_SOURCE_DIR}/buffer_file_homework/src/*.cpp)
+
+
+
+file(GLOB {name} ...) 命令是用来收集源文件的，并将他们存放在变量name中
+
+- file是cmake中的一个命令
+
+- GLOB是它的一个参数，表示全局匹配 ，GLOB用于查找文件，并将文件列表存储在一个变量中
+
+- $ {PROJECT_SOURCE_DIR} 这是cmake自带的一个变量，表示项目根目录
+
+- 
+
+
