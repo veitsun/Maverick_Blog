@@ -1,5 +1,11 @@
 # CUDA GPU编程应该如何避免bank conflict
 
+来源 https://blog.csdn.net/u013701860/article/details/50253343
+
+来源 [How to Optimize a CUDA Matmul Kernel for cuBLAS-like Performance: a Worklog](https://siboehm.com/articles/22/CUDA-MMM)
+
+来源 [CUDA 矩阵乘法终极优化 - CV技术指南（公众号） - 博客园](https://www.cnblogs.com/wxkang/p/17840501.html)
+
 ## 1， 为什么要避免bank conflict
 
 共享内存相比片外的全局内存有大的多的内存带宽
@@ -33,15 +39,17 @@ if (threadIdx.x % 2 == 0) {
 
 ## 2， 什么是bank conflict 以及 bank conflict的产生
 
-为了提高内存读写带宽，共享内存被分割成了32个等大小的内存块，即bank。因为一个warp有32个线程，相当于一个线程对应一个内存bank。这个分割方法通常是按照每4个字节一个bank，计算能力为3.x的GPU也可以8个字节一个bank
+为了提高内存读写带宽，共享内存被分割成了32个等大小的内存块，即bank。因为一个warp有32个线程，<mark>相当于一个线程对应一个内存bank</mark>。这个分割方法通常是按照<mark>每4个字节一个bank</mark>，计算能力为3.x的GPU也可以8个字节一个bank
 
-![](https://i-blog.csdnimg.cn/blog_migrate/2ab06cb7b1cc2d1aeb4a9a7dd5978fa4.jpeg)
+![](../../img/2024-12-10-20-12-31-image.png)
 
-理想情况下就是不同的线程访问不同的bank，可能是规则的访问，也可能是不规则的访问。这种同一时刻每个bank只被最多一个线程访问的情况下不会产生 。
+理想情况下就是<mark>不同的线程访问不同的bank</mark>，可能是规则的访问（如线程0读写bank0， 线程1读写bank1 ），也可能是不规则的访问（如线程0读写bank1， 线程1读写bank0）。
 
-特殊情况，如果有多个线程同时访问同一个bank的同一个地址的时候不会产生bank conflict，即broadcast。但当多个线程访问同一个bank的不同地址的时候，bank conflict就产生了。例如线程0访问地址0，而线程1访问地址32，由于它们在同一个bank，就会导致bank冲突。
+这种同一时刻每个bank只被最多一个线程访问的情况下不会产生 。
 
-bank 冲突产生之后，同一个内存读写将被串行化，而写入同一个地址时将只有其中一个线程能够成功写入（要使得每个线程都能够成功写入，需要使用原子操作atomic Instructions）。
+特殊情况，如果有<mark>多个线程同时访问同一个bank的同一个地址的时候不会产生bank conflict</mark>，即broadcast。但当<mark>多个线程访问同一个bank的不同地址的时候</mark>，bank conflict就产生了。例如线程0访问地址0，而线程1访问地址32，由于它们在同一个bank，就会导致bank冲突。
+
+<mark>bank 冲突产生之后，同一个内存读写将被串行化</mark>，而写入同一个地址时将只有其中一个线程能够成功写入（要使得每个线程都能够成功写入，需要使用原子操作atomic Instructions）。
 
 ## 3，如何避免产生bank conflict
 
@@ -67,43 +75,63 @@ global memory与shared memory的数据交换中，最好是每次32个线程读�
 
 方式3：二维数组方式：__shared__ int Vector1[6][32];
 
+        方式1的情况下，看自己如何对这个一维数组进行分割，如果每6个连续的字为一个向量则结果和方式2存储方式相同。方式2，3比较直观，但是可能具有不同的性能，他们存储方式如图2。
+
+![](../../img/2024-12-10-20-45-10-image.png)
+
+ 当每个线程同时访问自己向量的第一个元素时，按方式2存储则每个线程访问的字地址将为：tid*6+0，对应bank为(tid*6+0)%32，tid为线程索引threadIdx.x。可以检查发现将出现Bank conflict。如线程0和16，1和17等出现冲突。而按方式3存储，则显然每个向量第一个元素都存储在不同的bank中，不会引起Bank conflict。因而改变数据存储方式是一种避免Bank conflict的方式。
+
+![](../../img/2024-12-10-20-47-51-6815d1a2265aceabf174a13cfec12c7.jpg)
+
+  但按方式3存储最大的缺点就是每个线程保有的<mark>数组元素被离散存储</mark>了，某些情况下对编程造成了很大的不便，而方式2的优点正在于每个数组的元素都是连续存储的，特别是当线程保有的是一个矩阵时，会带来巨大的便利。在上面的例子中，如果Vector1其实是一个2行3列的矩阵，则对于方式2存储时，可以用指针将一维数组转换为二维数组的访问：![](../../img/2024-12-10-20-50-35-image.png)
+
+然后就可以使用诸如pD0[1][2]的方式来替代Vector1进行访问，这将大大简化一维数组的索引计算问题。因此如果通过某种方式使按方式2存储也能避免Bank conflict就好了。事实上通过一种非常简单的方式就可以达到这一点：上面的例子中向量的长度为6，是一个偶数，只要长度为偶数，按照方式2存储就会引入Bank conflict，而只要是奇数，则并不会导致这种冲突。因而当数组长度为偶数时，只需要将共享内存的数组长度增加1变为奇数，然后只使用前面的偶数个元素即可：
+
+![](../../img/2024-12-10-20-51-37-image.png)
+
+这样当每个线程同时访问自己向量的第一个元素时，按方式2存储则每个线程访问的字地址将为：tid*7+0，对应bank为(tid*7+0)%32，就不会出现引入Bank conflict的问题。<mark>唯一的一点瑕疵便是浪费了32个字的共享内存空间</mark>。
+
 ## 4， 共享内存的地址映射方式
 
 要解决bank冲突，首先我们要了解一下共享内存的地址映射方式。
 
 连续的32bits字被分配到连续的32个bank中。
 
-<img src="https://segmentfault.com/img/bVFMd3" title="" alt="bank-layout" data-align="center">
+![](../../img/2024-12-10-21-08-51-image.png)
 
 图： 数字为bank编号
 
 ## 5， 典型的bank访问方式
 
-<img src="https://segmentfault.com/img/bVFLSX" title="" alt="bank-access1" data-align="center">
+<img src="../../img/2024-12-10-21-09-46-image.png" title="" alt="" data-align="center">
+
+
 
 这种访问方式是线性访问方式，访问步长为1，每个warp中的线程id与每个bank的id一一对应，因此不会产生bank冲突。
 
-<img src="https://segmentfault.com/img/bVFLSZ" title="" alt="bank-access2" data-align="center">
+<img src="../../img/2024-12-10-21-10-09-image.png" title="" alt="" data-align="center">
+
+
 
 这种访问方式是交叉访问方式，每个线程并没有与bank一一对应，但每个线程都会对应一个唯一的bank，所以也不会产生bank冲突。
 
-<img src="https://segmentfault.com/img/bVFLS0" title="" alt="bank-access3" data-align="center">
+<img src="../../img/2024-12-10-21-10-35-image.png" title="" alt="" data-align="center">
 
 这种访问方式虽然是线性访问bank，但这种访问方式与第一种的区别在于访问的补偿（stride）变为2，这就造成了线程0与线程28都访问到了bank0 ， 线程1与线程29都访问到了bank2，，，于是造成了2路的bank冲突。
 
-<img src="https://segmentfault.com/img/bVFLS1" title="" alt="bank-access4" data-align="center">
+<img src="../../img/2024-12-10-21-11-01-image.png" title="" alt="" data-align="center">
 
 这种情况造成了8路的bank冲突
 
 下面有两种特殊情况：
 
-<img src="https://segmentfault.com/img/bVFLS2" title="" alt="bank-access5" data-align="center">
+<img src="../../img/2024-12-10-21-11-21-image.png" title="" alt="" data-align="center">
 
 这种情况是所有线程都访问同一个bank，产生了32路的bank冲突，但是由于广播（broadcast）机制，这种情况下并不会产生bank冲突。
 
 > broadcast： 当一个warp中的所有线程访问一个bank中的同一个字word地址时，就会向所有的线程广播这个字word，这种情况并不会发生bank冲突。
 
-<img src="https://segmentfault.com/img/bVFLS3" title="" alt="bank_access6" data-align="center">
+<img src="../../img/2024-12-10-21-11-41-image.png" title="" alt="" data-align="center">
 
 这种情况是所谓的多播机制--当一个warp中的几个线程访问同一个bank中的相同字地址时，会将改字广播给这些线程。
 
@@ -125,14 +153,20 @@ extern __shared__ char shrd[];
 foo = shrd[baseIndex + threadIdx.x];
 ```
 
-<img src="https://segmentfault.com/img/bVFLTw" title="" alt="bank_access7" data-align="center">
+
+
+<img src="../../img/2024-12-10-21-13-02-image.png" title="" alt="" data-align="center">
+
+
 
 ```
 extern __shared__ short shrd[];
 foo = shrd[baseIndex + threadIdx.x];
 ```
 
-<img src="https://segmentfault.com/img/bVFLS4" title="" alt="bank_access8" data-align="center">
+
+
+<img src="../../img/2024-12-10-21-13-32-image.png" title="" alt="" data-align="center">
 
 ## 7， 访问步长与bank冲突
 
