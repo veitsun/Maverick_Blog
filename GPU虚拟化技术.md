@@ -1,0 +1,35 @@
+# GPU虚拟化技术
+
+### 1. **硬件虚拟化**
+
+NVIDIA 的 GPU 具备硬件虚拟化支持，允许多个虚拟机（VM）共享同一 GPU 资源。主要技术有：
+
+- **SR-IOV（Single Root I/O Virtualization）**：将物理 GPU 划分为多个虚拟功能（VF），每个 VF 可分配给不同虚拟机，实现资源隔离和高效共享。
+
+SR-IOV 在虚拟环境中允许不同的虚拟机共享单个PCI Express 硬件接口。
+
+> 通过 SR-IOV 在物理GPU设备上创建多个虚拟 vGPU来实现的，每个虚拟vGPU可以被分配给一个虚拟机，让虚拟机直接访问和控制这些虚拟功能，从而实现高效的I/O虚拟化。NVIDIA早期的vGPU就是这样的实现，不过NVIDIA vGPU需要额外的license，额外增加了成本。SR-IOV虽然实现了1：N的能力，但其灵活性比较差，难以更细粒度的分割和调度。
+
+### 2. **软件虚拟化**
+
+NVIDIA 提供多种软件解决方案：
+
+- **vGPU（Virtual GPU）**：将物理 GPU 虚拟化为多个虚拟 GPU（vGPU），每个 vGPU 可分配给不同虚拟机，支持多种配置。
+
+- **GRID vGPU**：专为虚拟化环境设计，支持多种工作负载，如图形渲染和计算任务。
+
+# GPU虚拟化和共享方案
+
+掌握ＧＰＵ设备 虚拟化技巧，深度探讨其实现方式。GPU虚拟化和共享拥有丰富方案，英伟达官方推出vGPU、[MIG](https://zhida.zhihu.com/search?content_id=246125488&content_type=Article&match_order=1&q=MIG&zhida_source=entity)、[MPS](https://zhida.zhihu.com/search?content_id=246125488&content_type=Article&match_order=1&q=MPS&zhida_source=entity)等解决方案，同时也存在非官方的vCUDA、rCUDA、内核劫持等策略。
+
+****NVIDIA VGPU 原理****
+
+在 NVIDIA 的虚拟 GPU 驱动的虚拟环境中， vGPU软件与 Hypervisor 携手，共同安装在虚拟化层上。这为提升效率和性能提供了强大的支持。
+
+此款软件能创造虚拟GPU，让每个虚拟机(VM)都能与服务器上的物理GPU共享资源。对于需求极高的工作流程，单VM可利用多个物理GPU。
+
+我们的软件内含适用于各类VM的显卡或计算驱动。由于原本由CPU完成的任务被分配到GPU，用户将体验到更卓越的性能。虚拟化和云环境能够支持对工程和创意应用、以及计算密集型工作负载（如AI和数据科学）的严格要求。
+
+NVIDIA的虚拟GPU（vGPU）软件，为各类任务提供卓越的图形处理性能，从图像丰富的虚拟工作站到数据科学和AI应用。它使IT部门能够充分利用虚拟化带来的管理和安全优势，同时满足现代工作负载对NVIDIA GPU的强大需求。vGPU软件安装在云或企业数据中心服务器的物理GPU上，可创建可在多个虚拟机间共享的虚拟GPU。这些虚拟机可以随时随地通过任何设备访问。借助NVIDIA vGPU，您可以轻松实现高性能计算与灵活访问的完美结合。
+
+****NVIDIA MIG 虚拟化 多实例 GPU****

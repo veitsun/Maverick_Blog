@@ -1,0 +1,11 @@
+## Asynchronous Barrier
+
+without the arrive/wait barrier：
+
+ __syncthreads() : 在一个block 中同步所有的线程
+
+group.sync() : 使用协作组的时候，在一个 block 中同步所有线程
+
+### 7.26.1
+
+

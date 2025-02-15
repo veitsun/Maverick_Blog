@@ -1,3 +1,11 @@
+# 包管理工具 apt
+
+sudo apt install ./package.deb    # 安装 deb 包
+
+sudo apt remove package_name # 移除已安装的软件
+
+sudo apt update && sudo apt upgrade # 更新系统软件
+
 # 统计代码行数
 
 统计一个目录中（包含子目录） 中的代码行数。
