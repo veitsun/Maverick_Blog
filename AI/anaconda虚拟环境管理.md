@@ -79,3 +79,29 @@ conda search pan
 ## 删除包
 
 conda remove package_name
+
+Do you wish to update your shell profile to automatically initialize conda?
+This will activate conda on startup and change the command prompt when activated.
+If you'd prefer that conda's base environment not be activated on startup,
+   run the following command when conda is activated:
+
+conda config --set auto_activate_base false
+
+You can undo this by running `conda init --reverse $SHELL`? [yes|no]
+[no] >>> yes
+no change     /home/maverick/anaconda3/condabin/conda
+no change     /home/maverick/anaconda3/bin/conda
+no change     /home/maverick/anaconda3/bin/conda-env
+no change     /home/maverick/anaconda3/bin/activate
+no change     /home/maverick/anaconda3/bin/deactivate
+no change     /home/maverick/anaconda3/etc/profile.d/conda.sh
+no change     /home/maverick/anaconda3/etc/fish/conf.d/conda.fish
+no change     /home/maverick/anaconda3/shell/condabin/Conda.psm1
+no change     /home/maverick/anaconda3/shell/condabin/conda-hook.ps1
+no change     /home/maverick/anaconda3/lib/python3.12/site-packages/xontrib/conda.xsh
+no change     /home/maverick/anaconda3/etc/profile.d/conda.csh
+modified      /home/maverick/.bashrc
+
+==> For changes to take effect, close and re-open your current shell. <==
+
+Thank you for installing Anaconda3!

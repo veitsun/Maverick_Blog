@@ -61,8 +61,6 @@ block.sync();
 ### 7.27.6. Performance Guidance for `memcpy_async`
 
 > 流水线机制被同一warp中的所有线程所共享。这种共享会导致 memcpy_async 被纠缠在warp中，这在某种情况下会影响性能。
-> 
-> 
 
 在具备计算能力8.0的设备上，[cp.async family of instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async) 允许以异步方式将数据从全局内存复制到共享内存。这些指令支持一次拷贝4、8和16个字节。如果提供给`memcpy_async`的大小是 4、8 或 16 字节的倍数，并且传递给`memcpy_async`的两个指针都对齐到4、8或16对齐边界，那么`memcpy_async`就可以完全使用异步内存操作来实现。
 
