@@ -1,3 +1,5 @@
+# ---
+
 # 算子五：`nn.ConvTranspose3d` 3D 转置卷积算法
 
 ## 功能：
@@ -48,10 +50,6 @@ D_out​=(D_in​−1)×stride[0]−2×padding[0]+dilation[0]×(kernel_size[0]�
 H_out​=(H_in​−1)×stride[1]−2×padding[1]+dilation[1]×(kernel_size[1]−1)+output_padding[1]+1
 
 W_out​=(W_in​−1)×stride[2]−2×padding[2]+dilation[2]×(kernel_size[2]−1)+output_padding[2]+1
-
-
-
-
 
 # 算子六：torch.linalg.inv
 
